@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"></script>
+
+    <title>게시판</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            font-family: 'Gowun Dodum', sans-serif;
+        }
+
+        .mytitle {
+            width: 100%;
+            height: 250px;
+
+            background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://movie-phinf.pstatic.net/20210715_95/1626338192428gTnJl_JPEG/movie_image.jpg');
+            background-position: center;
+            background-size: cover;
+
+            color: white;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mytitle > button {
+            width: 200px;
+            height: 50px;
+
+            background-color: transparent;
+            color: white;
+
+            border-radius: 50px;
+            border: 1px solid white;
+
+            margin-top: 10px;
+        }
+
+        .mytitle > button:hover {
+            border: 2px solid white;
+        }
+
+        .mypost {
+            width: 95%;
+            max-width: 500px;
+            margin: 20px auto 0px auto;
+            padding: 20px;
+            box-shadow: 0px 0px 3px 0px gray;
+
+            display: none;
+        }
+
+        .mybtns {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+
+            margin-top: 20px;
+        }
+
+        .mybtns > button {
+            margin-right: 10px;
+        }
+
+        .myboard{
+            max-width: 1200px;
+            width: 90%;
+            margin: 20px auto;
+        }
+
+        .modal_contents{
+            width: 100%;
+            height: 300px;
+            font-size: 17px;
+        }
+    </style>
+</head>
+<script>
+    $(document).ready(function () {
+        listing();
+    });
+
+    function listing() {
+        $('#board-list').empty();
+
+        $.ajax({
+            type: 'GET',
+            url: '/api/boards',
+            success: function (response) {
+                for(let i=0; i<response.length; i++) {
+                    let board = response[i];
+                    let id = board.id;
+                    let title = board.title;
+                    let username = board.username;
+                    let modifiedAt = board.modifiedAt;
+                    let contents = board.contents;
+
+                    addHTML(id, title, contents, username, modifiedAt);
+                }
+            }
+        })
+    }
+
+    function addHTML (id, title, contents, username, modifiedAt){
+        let temp_html = `<tr class="tr${id}">
+                                <th scope="row">${id}</th>
+                                <td>
+                                    <a type="text" class="btn-e btn-e-lg btn-e-brd btn-e-dark" data-bs-toggle="modal" data-bs-target="#modal_default">${title}</a>
+                                        <div id="modal_default" class="modal fade" tabindex="-1" style="display: none;" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title f-w-700">${title}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <h6 class="m-b-10">${username}, ${modifiedAt}</h6>
+                                                        <hr>
+                                                        <textarea class="modal_contents">${contents}</textarea>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-primary">수정</button>
+                                                        <button type="button" class="btn btn-danger">삭제</button>
+                                                        <button type="button" class="btn btn-dark" data-bs-dismiss="modal">닫기<i class="fas fa-times m-l-5"></i></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                </td>
+                                <td>${username}</td>
+                                <td>${modifiedAt}</td>
+                            </tr>`
+        $('#board-list').append(temp_html)
+    }
+
+    function posting() {
+        let title = $('#title').val();
+        let username = $('#username').val();
+        let contents = $('#contents').val();
+
+        if (isValidContents(contents) === false) {
+            return;
+        }
+
+        let data = {'title': title, 'username': username, 'contents': contents};
+
+        $.ajax({
+            type: 'POST',
+            url: '/api/boards',
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function (response) {
+                alert('글이 성공적으로 작성되었습니다.')
+                window.location.reload()
+            }
+        });
+    }
+
+    function open_box() {
+        $('#post-box').show()
+    }
+
+    function close_box() {
+        $('#post-box').hide()
+    }
+
+    function isValidContents(contents){
+        if(contents === ''){
+            alert('내용을 입력해주세요');
+            return false;
+        }
+    }
+</script>
+
+<body>
+<div class="mytitle">
+    <h1>쓰고 싶은 말을 남겨보세요</h1>
+    <button onclick="open_box()">글 작성하기</button>
+</div>
+<div class="mypost" id="post-box">
+    <div class="form-floating mb-3">
+        <input id="title" type="email" class="form-control" placeholder="name@example.com">
+        <label>글 제목</label>
+    </div>
+    <div class="form-floating mb-3">
+        <input id="username" type="email" class="form-control" placeholder="name@example.com">
+        <label>작성자명</label>
+    </div>
+    <div class="form-floating">
+        <textarea id="contents" class="form-control" placeholder="Leave a comment here"></textarea>
+        <label>글 내용을 입력해주세요</label>
+    </div>
+    <div class="mybtns">
+        <button onclick="posting()" type="button" class="btn btn-dark">기록하기</button>
+        <button onclick="close_box()" type="button" class="btn btn-outline-dark">닫기</button>
+    </div>
+</div>
+<div class="myboard">
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th class="col-md-1">NO</th>
+                <th class="col-md-7">title</th>
+                <th class="col-md-2">username</th>
+                <th class="col-md-2">modified</th>
+            </tr>
+        </thead>
+        <tbody class="table" id="board-list">
+            <tr>
+                <th scope="row">1</th>
+                <td>여기에 모달</td>
+                <td>이재진</td>
+                <td>2022년 03월 22일 13:16</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+
+</html>
+
